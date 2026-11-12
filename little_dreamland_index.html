@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#7c5ce7">
+<title>Little Dreamland | Animal Memory Match</title>
+<style>
+:root{--purple:#7657d9;--ink:#342b55;--cream:#fffaf0;--mint:#dff7e8;--pink:#ffe3ed}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);background:linear-gradient(145deg,#fff7e7,#f1eaff 55%,#e7f8f1);min-height:100vh}
+header{text-align:center;padding:25px 16px 12px}
+.logo{font-size:clamp(2rem,7vw,3.3rem);font-weight:900;letter-spacing:-1.5px;color:var(--purple);text-shadow:2px 3px 0 #fff}
+.tagline{margin:4px 0;color:#756b91;font-weight:600}
+main{width:min(760px,94%);margin:12px auto 35px}
+.panel{background:#ffffffdc;border:2px solid #fff;border-radius:26px;padding:clamp(15px,4vw,26px);box-shadow:0 12px 35px #59428a16}
+.intro{text-align:center;margin-bottom:17px}
+.intro h1{font-size:clamp(1.35rem,5vw,2rem);margin:0 0 5px}
+.intro p{margin:0;color:#776e8e}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:18px 0}
+.stat{background:#f3efff;border-radius:16px;padding:10px;text-align:center}
+.stat strong{display:block;font-size:1.45rem;color:var(--purple)}
+.stat span{font-size:.78rem;color:#776e8e;font-weight:700}
+.controls{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin:13px 0 18px}
+select,button{font:inherit;border:0;border-radius:13px;padding:10px 14px;font-weight:750}
+select{background:#f1edff;color:var(--ink);border:1px solid #d9cffb}
+button{cursor:pointer;background:var(--purple);color:white;box-shadow:0 4px 0 #5338ad;transition:transform .12s}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #5338ad}
+button.secondary{background:#fff0d7;color:#79511b;box-shadow:0 4px 0 #e5c68e}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.card{aspect-ratio:1/1;border-radius:18px;border:2px solid #d8cff9;background:#e9e3ff;color:var(--purple);display:flex;align-items:center;justify-content:center;flex-direction:column;min-width:0;box-shadow:0 4px 0 #c9baf5;cursor:pointer;user-select:none;transition:transform .15s,background .15s}
+.card .face{font-size:clamp(1.8rem,7vw,3.2rem);line-height:1.1}
+.card .hint{font-size:.68rem;font-weight:800;margin-top:5px}
+.card.open{background:#fff3d8;border-color:#f2d18b;color:#6b4a18}
+.card.matched{background:var(--mint);border-color:#9cdbb0;box-shadow:0 4px 0 #b5e5c3;cursor:default}
+.card:disabled{opacity:1}
+.message{min-height:30px;text-align:center;margin:15px 0 0;font-weight:800;color:#5e4aa8}
+.win{display:none;text-align:center;margin-top:15px;background:#e4f8eb;border-radius:18px;padding:15px}
+.win.show{display:block}
+.win .trophy{font-size:2.5rem}
+footer{text-align:center;color:#82799a;font-size:.8rem;padding:0 15px 24px}
+@media(max-width:420px){.grid{gap:7px}.card{border-radius:13px}.stats{gap:6px}.stat{padding:8px 4px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🌈 Little Dreamland</div>
+  <p class="tagline">Play • Learn • Explore • Have Fun!</p>
+</header>
+<main>
+<section class="panel">
+  <div class="intro">
+    <h1>🐾 Animal Memory Match</h1>
+    <p>Turn over two cards and find the matching animal friends!</p>
+  </div>
+  <div class="stats" aria-live="polite">
+    <div class="stat"><strong id="moves">0</strong><span>MOVES</span></div>
+    <div class="stat"><strong id="pairs">0 / 6</strong><span>PAIRS FOUND</span></div>
+    <div class="stat"><strong id="time">0:00</strong><span>TIME</span></div>
+  </div>
+  <div class="controls">
+    <label for="level"><strong>Level:</strong></label>
+    <select id="level">
+      <option value="6">Easy · 6 pairs</option>
+      <option value="8">Medium · 8 pairs</option>
+      <option value="10">Challenge · 10 pairs</option>
+    </select>
+    <button id="restart" type="button">↻ Restart</button>
+    <button id="sound" class="secondary" type="button" aria-pressed="false">🔇 Sound off</button>
+  </div>
+  <div id="game" class="grid" aria-label="Animal memory cards"></div>
+  <div id="message" class="message" aria-live="polite">You can do it, little explorer! ⭐</div>
+  <div id="win" class="win" role="status">
+    <div class="trophy">🏆🎉</div>
+    <h2>Fantastic! You found them all!</h2>
+    <p id="result"></p>
+    <button id="again" type="button">Play again</button>
+  </div>
+</section>
+</main>
+<footer>Made with love for curious little minds 💜</footer>
+<script>
+const animals=[
+  ["🐵","Monkey"],["🦁","Lion"],["🐼","Panda"],["🐰","Rabbit"],["🐸","Frog"],
+  ["🐻","Bear"],["🐱","Cat"],["🐶","Dog"],["🦊","Fox"],["🐨","Koala"]
+];
+const game=document.getElementById("game"),movesEl=document.getElementById("moves"),
+pairsEl=document.getElementById("pairs"),timeEl=document.getElementById("time"),
+message=document.getElementById("message"),win=document.getElementById("win"),
+level=document.getElementById("level"),soundBtn=document.getElementById("sound");
+let deck=[],first=null,lock=false,moves=0,found=0,seconds=0,timer=null,soundOn=false,audioCtx=null;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function playTone(freq=550,duration=.11){
+  if(!soundOn)return;
+  try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+    osc.frequency.value=freq;osc.type="sine";gain.gain.setValueAtTime(.08,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+duration);
+    osc.connect(gain);gain.connect(audioCtx.destination);osc.start();osc.stop(audioCtx.currentTime+duration);
+  }catch(e){}
+}
+function clock(){seconds++;timeEl.textContent=Math.floor(seconds/60)+":"+String(seconds%60).padStart(2,"0");}
+function start(){
+  clearInterval(timer);seconds=0;moves=0;found=0;first=null;lock=false;
+  const count=Number(level.value);deck=shuffle([...animals.slice(0,count),...animals.slice(0,count)].map((a,i)=>({id:i,emoji:a[0],name:a[1],open:false,matched:false})));
+  movesEl.textContent="0";pairsEl.textContent=`0 / ${count}`;timeEl.textContent="0:00";
+  message.textContent="You can do it, little explorer! ⭐";win.classList.remove("show");
+  game.style.gridTemplateColumns=count>=10?"repeat(5,minmax(0,1fr))":"repeat(4,minmax(0,1fr))";
+  game.innerHTML="";
+  deck.forEach(card=>{
+    const b=document.createElement("button");b.type="button";b.className="card";
+    b.setAttribute("aria-label","Hidden animal card");b.dataset.id=card.id;
+    b.innerHTML='<span class="face">❔</span><span class="hint">TAP ME!</span>';
+    b.addEventListener("click",()=>flip(card.id,b));game.appendChild(b);
+  });
+  timer=setInterval(clock,1000);
+}
+function flip(id,button){
+  if(lock)return;
+  const card=deck.find(c=>c.id===id);if(!card||card.open||card.matched)return;
+  card.open=true;button.classList.add("open");button.innerHTML=`<span class="face">${card.emoji}</span><span class="hint">${card.name}</span>`;
+  button.setAttribute("aria-label",card.name);playTone(580);
+  if(!first){first={card,button};return;}
+  moves++;movesEl.textContent=moves;
+  if(first.card.name===card.name){
+    first.card.matched=true;card.matched=true;
+    first.button.classList.remove("open");button.classList.remove("open");
+    first.button.classList.add("matched");button.classList.add("matched");
+    first.button.disabled=true;button.disabled=true;found++;
+    pairsEl.textContent=`${found} / ${Number(level.value)}`;message.textContent="Great match! ⭐";
+    playTone(790,.18);first=null;
+    if(found===Number(level.value)){clearInterval(timer);document.getElementById("result").textContent=`You did it in ${moves} moves and ${timeEl.textContent}!`;win.classList.add("show");message.textContent="You are an Animal Memory Champion!";}
+  }else{
+    lock=true;const previous=first;first=null;message.textContent="Not a match. Try again! 💪";
+    setTimeout(()=>{previous.card.open=false;card.open=false;
+      previous.button.classList.remove("open");button.classList.remove("open");
+      previous.button.innerHTML='<span class="face">❔</span><span class="hint">TAP ME!</span>';
+      button.innerHTML='<span class="face">❔</span><span class="hint">TAP ME!</span>';
+      previous.button.setAttribute("aria-label","Hidden animal card");button.setAttribute("aria-label","Hidden animal card");lock=false;
+    },850);
+  }
+}
+document.getElementById("restart").addEventListener("click",start);
+document.getElementById("again").addEventListener("click",start);
+level.addEventListener("change",start);
+soundBtn.addEventListener("click",()=>{soundOn=!soundOn;soundBtn.textContent=soundOn?"🔊 Sound on":"🔇 Sound off";soundBtn.setAttribute("aria-pressed",String(soundOn));if(soundOn)playTone(700);});
+start();
+</script>
+</body>
+</html>
